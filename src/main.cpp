@@ -2,6 +2,8 @@
 #include "Subwindows.hpp"
 #include <cctype>
 #include <ncurses.h>
+#include <thread>
+#include <utility>
 
 int main(void) {
   const unsigned int ESC_KEY = 27;
@@ -15,8 +17,6 @@ int main(void) {
     endwin();
     return 1;
   }
-
-  refresh();
 
   do {
     drawSubwindowBoxes(subwindows);

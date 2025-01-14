@@ -2,8 +2,11 @@
 #include "Keyboard.hpp"
 #include "Subwindows.hpp"
 #include <array>
+#include <chrono>
 #include <iostream>
 #include <ncurses.h>
+#include <thread>
+#include <utility>
 #include <vector>
 
 int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
@@ -42,6 +45,7 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
                                 subwindowYPositions[3], 0);
 
   touchwin(windowMain);
+  refresh();
   return 0;
 }
 
@@ -65,9 +69,10 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
   getmaxyx(windowKeyboard, windowHeight, windowWidth);
 
   Keyboard keyboard;
+  std::pair<char, std::pair<int, int>> activeKey{0, {0, 0}};
 
   unsigned int yStep = windowHeight / keyboard.MAX_ROWS;
-  int xStep = 0;
+  unsigned int xStep = 0;
 
   auto draw = [&](auto &row) {
     xStep = windowWidth / 2 - row.size();
@@ -79,13 +84,13 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
         xStep++;
         mvwprintw(windowKeyboard, yStep, xStep, " ");
         xStep++;
-        refresh();
+
+        activeKey = std::make_pair(key, std::make_pair(yStep, xStep - 2));
       } else {
         mvwprintw(windowKeyboard, yStep, xStep, "%c", key);
         xStep++;
         mvwprintw(windowKeyboard, yStep, xStep, " ");
         xStep++;
-        refresh();
       }
     }
     yStep++;
@@ -94,4 +99,22 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
   draw(keyboard.topRow);
   draw(keyboard.middleRow);
   draw(keyboard.bottomRow);
+
+  if (activeKey.first != 0 && activeKey.first != ' ') {
+    std::thread keyPressWorker(removeKeyPress, windowKeyboard, activeKey);
+    keyPressWorker.detach();
+  }
+}
+
+void removeKeyPress(
+    WINDOW *windowKeyboard,
+    std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
+  char key = activeKey.first;
+  unsigned int yStep = activeKey.second.first;
+  unsigned int xStep = activeKey.second.second;
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  mvwprintw(windowKeyboard, yStep, xStep, "%c", key);
+  wrefresh(windowKeyboard);
 }

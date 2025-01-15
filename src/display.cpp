@@ -1,21 +1,19 @@
 #include "Display.hpp"
-#include "Keyboard.hpp"
-#include "Subwindows.hpp"
 #include <array>
 #include <chrono>
 #include <iostream>
 #include <mutex>
 #include <ncurses.h>
-#include <set>
 #include <thread>
 #include <utility>
 #include <vector>
 
 int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
   initscr();
-  noecho();
-  curs_set(0);
   cbreak();
+  noecho();
+  keypad(stdscr, TRUE);
+  curs_set(0);
 
   if (has_colors()) {
     start_color();
@@ -109,28 +107,17 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
-  static std::set<char> activeKeys;
   char key = activeKey.first;
+  unsigned int yCoord = activeKey.second.first;
+  unsigned int xCoord = activeKey.second.second;
 
-  static std::mutex activeKeysMutex;
-  {
-    std::lock_guard<std::mutex> lock(activeKeysMutex);
-    if (activeKeys.count(key)) {
-      return;
-    }
-    activeKeys.insert(key);
-  }
-
-  unsigned int yStep = activeKey.second.first;
-  unsigned int xStep = activeKey.second.second;
+  std::mutex activeKeysMutex;
+  std::unique_lock<std::mutex> activeKeyLock(activeKeysMutex);
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  mvwprintw(windowKeyboard, yStep, xStep, "%c", key);
+  mvwprintw(windowKeyboard, yCoord, xCoord, "%c", key);
   wrefresh(windowKeyboard);
 
-  {
-    std::lock_guard<std::mutex> lock(activeKeysMutex);
-    activeKeys.erase(key);
-  }
+  activeKeyLock.unlock();
 }

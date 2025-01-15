@@ -4,7 +4,9 @@
 #include <array>
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <ncurses.h>
+#include <set>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -100,16 +102,25 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
   draw(keyboard.middleRow);
   draw(keyboard.bottomRow);
 
-  if (activeKey.first != 0 && activeKey.first != ' ') {
-    std::thread keyPressWorker(removeKeyPress, windowKeyboard, activeKey);
-    keyPressWorker.detach();
-  }
+  std::thread keyPressWorker(removeKeyPress, windowKeyboard, activeKey);
+  keyPressWorker.detach();
 }
 
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
+  static std::set<char> activeKeys;
   char key = activeKey.first;
+
+  static std::mutex activeKeysMutex;
+  {
+    std::lock_guard<std::mutex> lock(activeKeysMutex);
+    if (activeKeys.count(key)) {
+      return;
+    }
+    activeKeys.insert(key);
+  }
+
   unsigned int yStep = activeKey.second.first;
   unsigned int xStep = activeKey.second.second;
 
@@ -117,4 +128,9 @@ void removeKeyPress(
 
   mvwprintw(windowKeyboard, yStep, xStep, "%c", key);
   wrefresh(windowKeyboard);
+
+  {
+    std::lock_guard<std::mutex> lock(activeKeysMutex);
+    activeKeys.erase(key);
+  }
 }

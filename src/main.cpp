@@ -20,7 +20,9 @@ int main(void) {
 
   do {
     drawSubwindowBoxes(subwindows);
-    drawKeyboard(subwindows.keyboard, toupper(keyPress));
+    if (isalpha(keyPress) || keyPress == 0) {
+      drawKeyboard(subwindows.keyboard, toupper(keyPress));
+    }
     refreshWindows(windowMain, subwindows);
   } while ((keyPress = getch()) != ESC_KEY);
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <mutex>
 #include <ncurses.h>
+#include <set>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -107,17 +108,25 @@ void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
+  static std::mutex activeKeyMutex;
+  static std::set<char> activeKeys;
+
   char key = activeKey.first;
   unsigned int yCoord = activeKey.second.first;
   unsigned int xCoord = activeKey.second.second;
 
-  std::mutex activeKeysMutex;
-  std::unique_lock<std::mutex> activeKeyLock(activeKeysMutex);
+  {
+    std::lock_guard<std::mutex> activeKeyLock(activeKeyMutex);
+    if (activeKeys.count(key)) {
+      return;
+    }
+    activeKeys.insert(key);
+  }
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   mvwprintw(windowKeyboard, yCoord, xCoord, "%c", key);
   wrefresh(windowKeyboard);
 
-  activeKeyLock.unlock();
+  activeKeys.erase(key);
 }

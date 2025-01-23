@@ -1,4 +1,5 @@
 #pragma once
+#include "EnigmaMachine.hpp"
 #include <array>
 #include <ncurses.h>
 #include <utility>
@@ -18,11 +19,17 @@ struct Keyboard {
                                          'B', 'N', 'M', 'L'};
 };
 
-int setupWindows(WINDOW *windowMain, Subwindows &subwindows);
-void drawSubwindowBoxes(Subwindows &subwindows);
-void refreshWindows(WINDOW *windowMain, Subwindows &subwindows);
+struct RotorDisplay {
+  
+};
 
+int setupWindows(WINDOW *windowMain, Subwindows &subwindows);
+void refreshWindows(WINDOW *windowMain, Subwindows &subwindows);
+void mouseHandler(Subwindows &subwindows, MEVENT &mouseEvent);
+
+void drawSubwindowBoxes(Subwindows &subwindows);
 void drawKeyboard(WINDOW *windowKeyboard, char keyPress);
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey);
+void drawRotors(WINDOW *windowRotors, EnigmaMachine &enigmaMachine);

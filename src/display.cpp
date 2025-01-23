@@ -14,6 +14,7 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
+  mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
   curs_set(0);
 
   if (has_colors()) {
@@ -50,19 +51,32 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
   return 0;
 }
 
-void drawSubwindowBoxes(Subwindows &subwindows) {
-  box(subwindows.rotors, '|', '-');
-  box(subwindows.lampboard, '|', '-');
-  box(subwindows.keyboard, '|', '-');
-  box(subwindows.plugBoard, '|', '-');
-}
-
 void refreshWindows(WINDOW *windowMain, Subwindows &subwindows) {
   wrefresh(windowMain);
   wrefresh(subwindows.rotors);
   wrefresh(subwindows.lampboard);
   wrefresh(subwindows.keyboard);
   wrefresh(subwindows.plugBoard);
+}
+
+void mouseHandler(Subwindows &subwindows, MEVENT &mouseEvent) {
+  unsigned int mouseY = mouseEvent.y;
+  unsigned int mouseX = mouseEvent.x;
+
+  unsigned int subwindowRotorHeight, subwindowRotorWidth;
+  getmaxyx(subwindows.rotors, subwindowRotorHeight, subwindowRotorWidth);
+
+  if (mouseEvent.bstate & BUTTON1_PRESSED) {
+
+  } else if (mouseEvent.bstate & BUTTON3_PRESSED) {
+  }
+}
+
+void drawSubwindowBoxes(Subwindows &subwindows) {
+  box(subwindows.rotors, '|', '-');
+  box(subwindows.lampboard, '|', '-');
+  box(subwindows.keyboard, '|', '-');
+  box(subwindows.plugBoard, '|', '-');
 }
 
 void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
@@ -126,7 +140,48 @@ void removeKeyPress(
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   mvwprintw(windowKeyboard, yCoord, xCoord, "%c", key);
-  wrefresh(windowKeyboard);
 
   activeKeys.erase(key);
+}
+
+void drawRotors(WINDOW *windowRotors, EnigmaMachine &enigmaMachine) {
+  const unsigned int MAX_SYMBOLS_COLUMN = 3;
+  unsigned int windowHeight, windowWidth = 0;
+  getmaxyx(windowRotors, windowHeight, windowWidth);
+
+  std::array<Rotor, EnigmaMachine::MAX_ROTORS_> activeRotors =
+      enigmaMachine.getActiveRotors();
+  unsigned int rotorCount = 0;
+  unsigned int yStep = windowHeight / MAX_SYMBOLS_COLUMN;
+  unsigned int xStep = (windowWidth / 2) - EnigmaMachine::MAX_ROTORS_ - 1;
+
+  for (unsigned int i = 0; i < MAX_SYMBOLS_COLUMN; ++i) {
+    yStep++;
+    xStep = (windowWidth / 2) - EnigmaMachine::MAX_ROTORS_ * 2;
+
+    if (i == MAX_SYMBOLS_COLUMN / 2) {
+      wattron(windowRotors, A_BOLD);
+    } else {
+      wattroff(windowRotors, A_BOLD);
+    }
+
+    for (unsigned int j = 0; j < EnigmaMachine::MAX_ROTORS_; ++j) {
+      rotorCount = 0;
+      mvwprintw(windowRotors, yStep, xStep, "|");
+      xStep++;
+      mvwprintw(windowRotors, yStep, xStep, "%c",
+                activeRotors[rotorCount + j].getActiveSymbol(i - 1));
+      xStep++;
+      mvwprintw(windowRotors, yStep, xStep, "|");
+      xStep++;
+      mvwprintw(windowRotors, yStep, xStep, " ");
+      xStep++;
+    }
+
+    if (rotorCount <= EnigmaMachine::MAX_ROTORS_) {
+      rotorCount++;
+    } else {
+      rotorCount = 0;
+    }
+  }
 }

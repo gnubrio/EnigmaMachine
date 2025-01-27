@@ -1,10 +1,12 @@
 #include "Display.hpp"
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <mutex>
 #include <ncurses.h>
 #include <set>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -39,8 +41,8 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
 
   subwindows.rotors = subwin(windowMain, subwindowHeight, terminalWidth,
                              subwindowYPositions[0], 0);
-  subwindows.lampboard = subwin(windowMain, subwindowHeight, terminalWidth,
-                                subwindowYPositions[1], 0);
+  subwindows.output = subwin(windowMain, subwindowHeight, terminalWidth,
+                             subwindowYPositions[1], 0);
   subwindows.keyboard = subwin(windowMain, subwindowHeight, terminalWidth,
                                subwindowYPositions[2], 0);
   subwindows.plugBoard = subwin(windowMain, subwindowHeight, terminalWidth,
@@ -54,7 +56,7 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
 void refreshWindows(WINDOW *windowMain, Subwindows &subwindows) {
   wrefresh(windowMain);
   wrefresh(subwindows.rotors);
-  wrefresh(subwindows.lampboard);
+  wrefresh(subwindows.output);
   wrefresh(subwindows.keyboard);
   wrefresh(subwindows.plugBoard);
 }
@@ -74,12 +76,12 @@ void mouseHandler(Subwindows &subwindows, MEVENT &mouseEvent) {
 
 void drawSubwindowBoxes(Subwindows &subwindows) {
   box(subwindows.rotors, '|', '-');
-  box(subwindows.lampboard, '|', '-');
+  box(subwindows.output, '|', '-');
   box(subwindows.keyboard, '|', '-');
   box(subwindows.plugBoard, '|', '-');
 }
 
-void drawKeyboard(WINDOW *windowKeyboard, char keyPress) {
+void drawKeyboard(WINDOW *windowKeyboard, int keyPress) {
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowKeyboard, windowHeight, windowWidth);
 
@@ -183,5 +185,58 @@ void drawRotors(WINDOW *windowRotors, EnigmaMachine &enigmaMachine) {
     } else {
       rotorCount = 0;
     }
+  }
+}
+
+void drawOutput(WINDOW *windowOutput, int inputKey) {
+  wclear(windowOutput);
+
+  unsigned int windowHeight, windowWidth = 0;
+  getmaxyx(windowOutput, windowHeight, windowWidth);
+
+  const unsigned int Y_PADDING = 2;
+  const unsigned int X_PADDING = 4;
+  const unsigned int MAX_HEIGHT_CHARACTERS = windowHeight - Y_PADDING;
+  const unsigned int MAX_WIDTH_CHARACTERS = windowWidth - X_PADDING;
+
+  static std::string displayedText;
+
+  if (inputKey == KEY_BACKSPACE && displayedText.length() > 0) {
+    if (displayedText.length() > 0) {
+      displayedText.pop_back();
+    } else {
+      return;
+    }
+  } else if (inputKey != KEY_BACKSPACE) {
+    displayedText += inputKey;
+  }
+
+  std::vector<std::string> substrings = {};
+  unsigned int lines = (unsigned int)std::ceil((float)displayedText.length() /
+                                               MAX_WIDTH_CHARACTERS);
+
+  if (displayedText.length() > MAX_WIDTH_CHARACTERS) {
+    unsigned int start = 0;
+    unsigned int end = 0;
+    unsigned int step = displayedText.length() / lines;
+
+    for (unsigned int i = 0; i < lines; ++i) {
+      end = step * (i + 1);
+      std::string substring = displayedText.substr(start, end);
+      substrings.push_back(substring);
+      start = end;
+    }
+  } else {
+    substrings.push_back(displayedText);
+  }
+
+  unsigned int yStep = (windowHeight / 2) - (lines / 2);
+  for (const auto &substring : substrings) {
+    unsigned int xStep = (windowWidth / 2) - (substring.length() / 2);
+    for (unsigned long int j = 0; j < substring.length(); ++j) {
+      mvwprintw(windowOutput, yStep, xStep, "%c", substring[j]);
+      xStep++;
+    }
+    yStep++;
   }
 }

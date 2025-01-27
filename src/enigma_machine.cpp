@@ -10,6 +10,12 @@ Rotor::Rotor(std::string modelName, std::string symbols, char notch)
     }
     activeSymbol_ = symbols[0];
   }
+
+  char letter = 65;
+  for (size_t i = 0; i < alaphbet_.size(); ++i) {
+    const_cast<char &>(alaphbet_[i]) = letter;
+    letter++;
+  }
 }
 
 void Rotor::spin(int direction) {
@@ -32,9 +38,24 @@ void Rotor::spin(int direction) {
   }
 }
 
-char Rotor::getNotch() { return notch_; }
+void Rotor::transfer(char &key) {
+  for (unsigned int i = 0; i < MAX_SYMBOLS_; ++i) {
+    if (key == alaphbet_[i]) {
+      key = shiftIndex(symbols_, position_, i);
+    }
+  }
+}
 
-char Rotor::getActiveSymbol(int offset) {
+template <typename T, size_t N>
+T &Rotor::shiftIndex(std::array<T, N> &activeRotors, size_t index,
+                     size_t shift) {
+  size_t start = (index + shift) % N;
+  return activeRotors[start];
+}
+
+char Rotor::getNotch() const { return notch_; }
+
+char Rotor::getActiveSymbol(int offset) const {
   if (offset < 0 && symbols_[position_] == symbols_.front()) {
     return symbols_.back() + (offset + 1);
   } else if (offset > 0 && symbols_[position_] == symbols_.back()) {
@@ -43,7 +64,40 @@ char Rotor::getActiveSymbol(int offset) {
   return symbols_[position_ + offset];
 }
 
-void EnigmaMachine::encrypt(char key) {}
+Reflector::Reflector(std::string modelName, std::string symbols)
+    : Rotor(modelName, symbols, '\0') {}
+
+void Cable::transfer(char &key) {
+  if (this->input == '\0' || this->output == '\0') {
+    return;
+  }
+
+  if (this->input == key) {
+    key = this->output;
+  } else if (this->output == key) {
+    key = this->input;
+  }
+}
+
+void EnigmaMachine::encrypt(char &key) {
+  for (auto cable : activePlugs_) {
+    cable.transfer(key);
+  }
+
+  for (auto rotor : activeRotors_) {
+    rotor.transfer(key);
+  }
+
+  currentReflector_->transfer(key);
+
+  for (int i = MAX_ROTORS_; i > 0; --i) {
+    activeRotors_[i].transfer(key);
+  }
+
+  for (int i = MAX_CABLES_; i > 0; --i) {
+    activePlugs_[i].transfer(key);
+  }
+}
 
 void EnigmaMachine::spinRotors() {
   activeRotors_.back().spin();
@@ -58,6 +112,7 @@ void EnigmaMachine::spinRotors() {
   }
 }
 
-std::array<Rotor, EnigmaMachine::MAX_ROTORS_> EnigmaMachine::getActiveRotors() {
+std::array<Rotor, EnigmaMachine::MAX_ROTORS_>
+EnigmaMachine::getActiveRotors() const {
   return activeRotors_;
 }

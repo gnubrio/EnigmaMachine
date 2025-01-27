@@ -2,10 +2,13 @@
 #include "EnigmaMachine.hpp"
 #include <cctype>
 #include <ncurses.h>
+#include <utility>
 
 int main(void) {
   const unsigned int ESC_KEY = 27;
-  char keyPress = 0;
+  const unsigned int SPACE_KEY = 32;
+
+  int keyPress = 0;
   MEVENT mouseEvent;
 
   WINDOW *windowMain = nullptr;
@@ -19,26 +22,40 @@ int main(void) {
     return 1;
   }
 
-  bool setup = true;
   do {
-    if (setup == true) {
-      drawSubwindowBoxes(subwindows);
-      setup = false;
-    }
-
-    if (isalpha(keyPress) || keyPress == 0) {
-      drawKeyboard(subwindows.keyboard, toupper(keyPress));
-      engimaMachine.spinRotors();
-      drawRotors(subwindows.rotors, engimaMachine);
-    }
-
     if (getmouse(&mouseEvent) == true) {
       mouseHandler(subwindows, mouseEvent);
     }
 
+    switch (keyPress) {
+    case SPACE_KEY:
+      drawOutput(subwindows.output, SPACE_KEY);
+      break;
+    case KEY_BACKSPACE:
+      drawOutput(subwindows.output, KEY_BACKSPACE);
+      break;
+    case 0:
+      drawKeyboard(subwindows.keyboard, keyPress);
+      drawRotors(subwindows.rotors, engimaMachine);
+    }
+
+    if (isalpha(keyPress)) {
+      keyPress = toupper(keyPress);
+      char encryptedLetter = keyPress;
+
+      engimaMachine.encrypt(encryptedLetter);
+      engimaMachine.spinRotors();
+
+      drawKeyboard(subwindows.keyboard, keyPress);
+      drawOutput(subwindows.output, encryptedLetter);
+      drawRotors(subwindows.rotors, engimaMachine);
+    }
+
+    drawSubwindowBoxes(subwindows);
     refreshWindows(windowMain, subwindows);
   } while ((keyPress = getch()) != ESC_KEY);
 
   endwin();
+
   return 0;
 }

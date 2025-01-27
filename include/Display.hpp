@@ -6,7 +6,7 @@
 
 struct Subwindows {
   const unsigned int MAX_SUBWINDOWS = 4;
-  WINDOW *rotors, *lampboard, *keyboard, *plugBoard = nullptr;
+  WINDOW *rotors, *output, *keyboard, *plugBoard = nullptr;
 };
 
 struct Keyboard {
@@ -19,17 +19,17 @@ struct Keyboard {
                                          'B', 'N', 'M', 'L'};
 };
 
-struct RotorDisplay {
-  
-};
-
 int setupWindows(WINDOW *windowMain, Subwindows &subwindows);
 void refreshWindows(WINDOW *windowMain, Subwindows &subwindows);
 void mouseHandler(Subwindows &subwindows, MEVENT &mouseEvent);
 
 void drawSubwindowBoxes(Subwindows &subwindows);
-void drawKeyboard(WINDOW *windowKeyboard, char keyPress);
+
+void drawKeyboard(WINDOW *windowKeyboard, int keyPress);
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey);
+
 void drawRotors(WINDOW *windowRotors, EnigmaMachine &enigmaMachine);
+
+void drawOutput(WINDOW *windowOutput, int inputKey);

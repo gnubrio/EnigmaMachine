@@ -1,6 +1,5 @@
 #pragma once
-#include "EnigmaMachine.hpp"
-#include <array>
+#include "../include/EnigmaMachine.hpp"
 #include <ncurses.h>
 #include <utility>
 
@@ -9,27 +8,21 @@ struct Subwindows {
   WINDOW *rotors, *output, *keyboard, *plugBoard = nullptr;
 };
 
-struct Keyboard {
-  const unsigned int MAX_ROWS = 3;
-  const std::array<char, 9> topRow = {'Q', 'W', 'E', 'R', 'T',
-                                      'Z', 'U', 'I', 'O'};
-  const std::array<char, 8> middleRow = {'A', 'S', 'D', 'F',
-                                         'G', 'H', 'J', 'K'};
-  const std::array<char, 9> bottomRow = {'P', 'Y', 'X', 'C', 'V',
-                                         'B', 'N', 'M', 'L'};
-};
-
 int setupWindows(WINDOW *windowMain, Subwindows &subwindows);
 void refreshWindows(WINDOW *windowMain, Subwindows &subwindows);
-void mouseHandler(Subwindows &subwindows, MEVENT &mouseEvent);
+void clearWindows(WINDOW *windowMain, Subwindows &subwindows);
 
 void drawSubwindowBoxes(Subwindows &subwindows);
+void highlightSubwindow(WINDOW *subwindow);
+
+void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
+                     const int ESC_KEY, const int ENTER_KEY);
 
 void drawKeyboard(WINDOW *windowKeyboard, int keyPress);
 void removeKeyPress(
     WINDOW *windowKeyboard,
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey);
 
-void drawRotors(WINDOW *windowRotors, EnigmaMachine &enigmaMachine);
+void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine);
 
-void drawOutput(WINDOW *windowOutput, int inputKey);
+bool drawOutput(WINDOW *windowOutput, int inputKey);

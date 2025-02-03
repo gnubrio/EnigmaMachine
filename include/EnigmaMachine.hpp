@@ -3,16 +3,18 @@
 #include <cctype>
 #include <memory>
 #include <string>
+#include <vector>
 
 class Rotor {
 public:
-  Rotor(std::string modelName, std::string symbols, char notch);
+  Rotor(const std::string &modelName, const std::string &symbols, char notch);
   virtual ~Rotor() = default;
   virtual void spin(int direction = -1);
   void transfer(char &key);
   template <typename T, size_t N>
   T &shiftIndex(std::array<T, N> &activeRotors, size_t index, size_t shift);
-  virtual char getNotch() const;
+  const std::string &getModelName() const;
+  virtual char getNotch(int offset = 0) const;
   virtual char getActiveSymbol(int offset = 0) const;
 
   bool operator==(const Rotor &other) const {
@@ -23,7 +25,9 @@ protected:
   static constexpr unsigned int MAX_SYMBOLS_ = 26;
   std::string modelName_ = "";
   std::array<char, MAX_SYMBOLS_> symbols_ = {};
-  const std::array<char, MAX_SYMBOLS_> alaphbet_ = {};
+  static constexpr std::array<char, MAX_SYMBOLS_> alphabet_ = {
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+      'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
   unsigned int position_ = 0;
 
 private:
@@ -33,7 +37,7 @@ private:
 
 class Reflector : public Rotor {
 public:
-  Reflector(std::string modelName, std::string symbols);
+  Reflector(const std::string &modelName, const std::string &symbols);
 
 private:
 };
@@ -49,12 +53,18 @@ struct Cable {
 
 class EnigmaMachine {
 public:
+  EnigmaMachine();
+
   static constexpr unsigned int MAX_ROTORS_ = 3;
   static constexpr unsigned int MAX_CABLES_ = 10;
 
   void encrypt(char &key);
-  void spinRotors();
-  std::array<Rotor, MAX_ROTORS_> getActiveRotors() const;
+  void spinRotors(int direction = -1);
+  void setRotor(const Rotor &inputRotor, const Rotor &originalRotor,
+                unsigned int index);
+
+  const std::vector<Rotor> &getAvaliableRotors() const;
+  const std::vector<Rotor> &getActiveRotors() const;
 
 private:
   Rotor rotorI_ =
@@ -67,7 +77,9 @@ private:
       Rotor("M3 Army | Rotor I", "ESOVPZJAYQUIRHXLNFTGKDCMWB", 'J');
   Rotor rotorV_ =
       Rotor("M3 Army | Rotor II", "VZBRGITYUPSDNHLXAWMJQOFECK", 'Z');
-  std::array<Rotor, MAX_ROTORS_> activeRotors_ = {rotorI_, rotorII_, rotorIII_};
+  std::vector<Rotor> avaliableRotors_ = {rotorI_, rotorII_, rotorIII_, rotorIV_,
+                                         rotorV_};
+  std::vector<Rotor> activeRotors_;
 
   Reflector reflectorA_ =
       Reflector("Reflector A", "EJMZALYXVBWFCRQUONTSPIKHGD");

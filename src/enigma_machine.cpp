@@ -1,20 +1,13 @@
-#include "EnigmaMachine.hpp"
-#include <array>
-#include <string>
+#include "../include/EnigmaMachine.hpp"
 
-Rotor::Rotor(std::string modelName, std::string symbols, char notch)
+Rotor::Rotor(const std::string &modelName, const std::string &symbols,
+             char notch)
     : modelName_(modelName), notch_(notch) {
   if (symbols.length() >= symbols_.size()) {
     for (size_t i = 0; i < symbols_.size(); ++i) {
       symbols_[i] = symbols[i];
     }
     activeSymbol_ = symbols[0];
-  }
-
-  char letter = 65;
-  for (size_t i = 0; i < alaphbet_.size(); ++i) {
-    const_cast<char &>(alaphbet_[i]) = letter;
-    letter++;
   }
 }
 
@@ -40,7 +33,7 @@ void Rotor::spin(int direction) {
 
 void Rotor::transfer(char &key) {
   for (unsigned int i = 0; i < MAX_SYMBOLS_; ++i) {
-    if (key == alaphbet_[i]) {
+    if (key == alphabet_[i]) {
       key = shiftIndex(symbols_, position_, i);
     }
   }
@@ -53,7 +46,21 @@ T &Rotor::shiftIndex(std::array<T, N> &activeRotors, size_t index,
   return activeRotors[start];
 }
 
-char Rotor::getNotch() const { return notch_; }
+const std::string &Rotor::getModelName() const { return modelName_; }
+
+char Rotor::getNotch(int offset) const {
+  if (offset == 0) {
+    return notch_;
+  }
+
+  for (unsigned long int i = 0; i < this->symbols_.size(); ++i) {
+    if (this->notch_ == symbols_[i]) {
+      return symbols_[i + offset];
+    }
+  }
+
+  return '\0';
+}
 
 char Rotor::getActiveSymbol(int offset) const {
   if (offset < 0 && symbols_[position_] == symbols_.front()) {
@@ -64,7 +71,7 @@ char Rotor::getActiveSymbol(int offset) const {
   return symbols_[position_ + offset];
 }
 
-Reflector::Reflector(std::string modelName, std::string symbols)
+Reflector::Reflector(const std::string &modelName, const std::string &symbols)
     : Rotor(modelName, symbols, '\0') {}
 
 void Cable::transfer(char &key) {
@@ -79,6 +86,12 @@ void Cable::transfer(char &key) {
   }
 }
 
+EnigmaMachine::EnigmaMachine() {
+  for (unsigned int i = 0; i < MAX_ROTORS_; ++i) {
+    activeRotors_.push_back(avaliableRotors_[i]);
+  }
+}
+
 void EnigmaMachine::encrypt(char &key) {
   for (auto cable : activePlugs_) {
     cable.transfer(key);
@@ -90,29 +103,65 @@ void EnigmaMachine::encrypt(char &key) {
 
   currentReflector_->transfer(key);
 
-  for (int i = MAX_ROTORS_; i > 0; --i) {
+  for (int i = MAX_ROTORS_ - 1; i > 0; --i) {
     activeRotors_[i].transfer(key);
   }
 
-  for (int i = MAX_CABLES_; i > 0; --i) {
+  for (int i = MAX_CABLES_ - 1; i > 0; --i) {
     activePlugs_[i].transfer(key);
   }
 }
 
-void EnigmaMachine::spinRotors() {
-  activeRotors_.back().spin();
+void EnigmaMachine::spinRotors(int direction) {
+  activeRotors_.back().spin(direction);
 
-  for (int i = activeRotors_.size() - 1; i > 0; --i) {
-    if (activeRotors_[i] != activeRotors_.front() &&
-        activeRotors_[i].getActiveSymbol() == activeRotors_[i].getNotch()) {
-      activeRotors_[i - 1].spin();
-    } else {
-      return;
+  if (direction == -1) {
+    for (int i = activeRotors_.size() - 1; i > 0; --i) {
+      if (activeRotors_[i] != activeRotors_.front() &&
+          activeRotors_[i].getActiveSymbol() == activeRotors_[i].getNotch()) {
+        activeRotors_[i - 1].spin(direction);
+      } else {
+        return;
+      }
+    }
+  } else if (direction == 1) {
+    for (int i = activeRotors_.size() - 1; i > 0; --i) {
+      if (activeRotors_[i] != activeRotors_.front() &&
+          activeRotors_[i].getActiveSymbol() == activeRotors_[i].getNotch(1)) {
+        activeRotors_[i - 1].spin(direction);
+      } else {
+        return;
+      }
     }
   }
 }
 
-std::array<Rotor, EnigmaMachine::MAX_ROTORS_>
-EnigmaMachine::getActiveRotors() const {
+void EnigmaMachine::setRotor(const Rotor &inputRotor,
+                             const Rotor &originalRotor, unsigned int index) {
+  bool swap = false;
+  unsigned int swapIndex = 0;
+
+  for (size_t i = 0; i < activeRotors_.size(); ++i) {
+    if (activeRotors_[i] == inputRotor) {
+      if (i == index) {
+        return;
+      } else {
+        swap = true;
+        swapIndex = i;
+      }
+    }
+  }
+
+  if (swap) {
+    activeRotors_[swapIndex] = originalRotor;
+  }
+  activeRotors_[index] = inputRotor;
+}
+
+const std::vector<Rotor> &EnigmaMachine::getAvaliableRotors() const {
+  return avaliableRotors_;
+}
+
+const std::vector<Rotor> &EnigmaMachine::getActiveRotors() const {
   return activeRotors_;
 }

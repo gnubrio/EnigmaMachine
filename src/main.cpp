@@ -6,7 +6,7 @@
 int main(void) {
   WINDOW *windowMain = nullptr;
   Subwindows subwindows;
-  EnigmaMachine enigmaMachine;
+  EnigmaMachine enigmaMachine = setupEnigmaMachine();
 
   int error = setupWindows(windowMain, subwindows);
   if (error) {
@@ -24,18 +24,20 @@ int main(void) {
     if (isalpha(keyPress)) {
       keyPress = toupper(keyPress);
       char encryptedLetter = keyPress;
-
       enigmaMachine.encrypt(encryptedLetter);
-      enigmaMachine.spinRotors(-1);
 
       drawKeyboard(subwindows.keyboard, keyPress);
-      drawOutput(subwindows.output, encryptedLetter);
-      drawRotors(subwindows.rotors, enigmaMachine);
+      bool shouldSpin = drawOutput(subwindows.output, encryptedLetter);
+      if (shouldSpin) {
+        enigmaMachine.spinRotors(-1);
+        drawRotors(subwindows.rotors, enigmaMachine);
+      }
+
+      drawPlugBoard(subwindows.plugBoard, enigmaMachine);
     } else if (keyPress == SPACE_KEY) {
       drawOutput(subwindows.output, SPACE_KEY);
     } else if (keyPress == KEY_BACKSPACE) {
       bool shouldSpin = drawOutput(subwindows.output, KEY_BACKSPACE);
-
       if (shouldSpin) {
         enigmaMachine.spinRotors(1);
         drawRotors(subwindows.rotors, enigmaMachine);
@@ -46,9 +48,11 @@ int main(void) {
       drawKeyboard(subwindows.keyboard, keyPress);
       drawOutput(subwindows.output, keyPress);
       drawRotors(subwindows.rotors, enigmaMachine);
+      drawPlugBoard(subwindows.plugBoard, enigmaMachine);
     } else if (keyPress == 0) {
       drawKeyboard(subwindows.keyboard, keyPress);
       drawRotors(subwindows.rotors, enigmaMachine);
+      drawPlugBoard(subwindows.plugBoard, enigmaMachine);
     }
 
     switch (keyPress) {
@@ -59,8 +63,10 @@ int main(void) {
       drawRotors(subwindows.rotors, enigmaMachine);
       break;
     case KEY_DOWN:
-      drawSubwindowBoxes(subwindows);
-      highlightSubwindow(subwindows.plugBoard);
+      plugBoardConfigMenu(subwindows.plugBoard, enigmaMachine, ESC_KEY);
+
+      wclear(subwindows.plugBoard);
+      drawPlugBoard(subwindows.plugBoard, enigmaMachine);
       break;
     }
 

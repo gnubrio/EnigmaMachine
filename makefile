@@ -1,5 +1,5 @@
 CXX = clang++
-CXXFLAGS = -Wall -Wextra -std=c++20
+CXXFLAGS = -Wall -Wextra -Wpedantic -Wshadow -Werror=return-type -std=c++20 
 LDFLAGS = -lncurses
 
 DEBUG = 1

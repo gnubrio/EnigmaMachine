@@ -15,8 +15,11 @@ void clearWindows(WINDOW *windowMain, Subwindows &subwindows);
 void drawSubwindowBoxes(Subwindows &subwindows);
 void highlightSubwindow(WINDOW *subwindow);
 
+void escapeMenu(WINDOW *windowMain, EnigmaMachine &enigmaMachine);
 void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
                      const int ESC_KEY, const int ENTER_KEY);
+void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
+                         const int ESC_KEY);
 
 void drawKeyboard(WINDOW *windowKeyboard, int keyPress);
 void removeKeyPress(
@@ -24,5 +27,5 @@ void removeKeyPress(
     std::pair<char, std::pair<unsigned int, unsigned int>> activeKey);
 
 void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine);
-
+void drawPlugBoard(WINDOW *windowPlugBoard, const EnigmaMachine &enigmaMachine);
 bool drawOutput(WINDOW *windowOutput, int inputKey);

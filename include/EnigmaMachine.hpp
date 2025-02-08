@@ -1,9 +1,11 @@
 #pragma once
 #include <array>
 #include <cctype>
-#include <memory>
 #include <string>
 #include <vector>
+
+class EnigmaMachine;
+EnigmaMachine setupEnigmaMachine();
 
 class Rotor {
 public:
@@ -14,11 +16,14 @@ public:
   template <typename T, size_t N>
   T &shiftIndex(std::array<T, N> &activeRotors, size_t index, size_t shift);
   const std::string &getModelName() const;
-  virtual char getNotch(int offset = 0) const;
-  virtual char getActiveSymbol(int offset = 0) const;
+  virtual char getNotch(const int offset = 0) const;
+  virtual char getActiveSymbol(const int offset = 0) const;
 
   bool operator==(const Rotor &other) const {
     return modelName_ == other.modelName_;
+  }
+  bool operator!=(const Rotor &other) const {
+    return modelName_ != other.modelName_;
   }
 
 protected:
@@ -45,6 +50,8 @@ private:
 struct Cable {
   Cable(char input, char output)
       : input(toupper(input)), output(toupper(output)) {}
+
+  static constexpr unsigned int MAX_PLUGS = 2;
   char input = '\0';
   char output = '\0';
 
@@ -53,7 +60,8 @@ struct Cable {
 
 class EnigmaMachine {
 public:
-  EnigmaMachine();
+  EnigmaMachine(std::vector<Rotor> &rotors, std::vector<Reflector> &reflectors,
+                std::vector<Cable> &cables);
 
   static constexpr unsigned int MAX_ROTORS_ = 3;
   static constexpr unsigned int MAX_CABLES_ = 10;
@@ -62,41 +70,20 @@ public:
   void spinRotors(int direction = -1);
   void setRotor(const Rotor &inputRotor, const Rotor &originalRotor,
                 unsigned int index);
+  void setPlug(const int index, const bool input, const int direction);
 
   const std::vector<Rotor> &getAvaliableRotors() const;
   const std::vector<Rotor> &getActiveRotors() const;
+  const std::vector<Cable> &getActivePlugs() const;
 
 private:
-  Rotor rotorI_ =
-      Rotor("Enigma I | Rotor I", "EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q');
-  Rotor rotorII_ =
-      Rotor("Enigma I | Rotor II", "AJDKSIRUXBLHWTMCQGZNPYFVOE", 'E');
-  Rotor rotorIII_ =
-      Rotor("Enigma I | Rotor III", "BDFHJLCPRTXVZNYEIWGAKMUSQO", 'V');
-  Rotor rotorIV_ =
-      Rotor("M3 Army | Rotor I", "ESOVPZJAYQUIRHXLNFTGKDCMWB", 'J');
-  Rotor rotorV_ =
-      Rotor("M3 Army | Rotor II", "VZBRGITYUPSDNHLXAWMJQOFECK", 'Z');
-  std::vector<Rotor> avaliableRotors_ = {rotorI_, rotorII_, rotorIII_, rotorIV_,
-                                         rotorV_};
+  static constexpr unsigned int MAX_REFLECTORS_ = 1;
+
+  std::vector<Rotor> avaliableRotors_ = {};
+  std::vector<Reflector> avaliableReflectors_ = {};
   std::vector<Rotor> activeRotors_;
 
-  Reflector reflectorA_ =
-      Reflector("Reflector A", "EJMZALYXVBWFCRQUONTSPIKHGD");
-  std::unique_ptr<Reflector> currentReflector_ =
-      std::make_unique<Reflector>(reflectorA_);
+  Reflector currentReflector_ = avaliableReflectors_[0];
 
-  Cable cable1_ = Cable('\0', '\0');
-  Cable cable2_ = Cable('\0', '\0');
-  Cable cable3_ = Cable('\0', '\0');
-  Cable cable4_ = Cable('\0', '\0');
-  Cable cable5_ = Cable('\0', '\0');
-  Cable cable6_ = Cable('\0', '\0');
-  Cable cable7_ = Cable('\0', '\0');
-  Cable cable8_ = Cable('\0', '\0');
-  Cable cable9_ = Cable('\0', '\0');
-  Cable cable10_ = Cable('\0', '\0');
-  std::array<Cable, MAX_CABLES_> activePlugs_ = {
-      cable1_, cable2_, cable3_, cable4_, cable5_,
-      cable6_, cable7_, cable8_, cable9_, cable10_};
+  std::vector<Cable> activePlugs_ = {};
 };

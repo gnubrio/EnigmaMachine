@@ -1,7 +1,6 @@
 #include "../include/Display.hpp"
 #include <cmath>
 #include <cstdlib>
-#include <iostream>
 #include <mutex>
 #include <ncurses.h>
 #include <set>
@@ -80,6 +79,10 @@ void highlightSubwindow(WINDOW *subwindow) {
   wattroff(subwindow, A_BOLD);
 }
 
+void escapeMenu(WINDOW *windowMain, EnigmaMachine &enigmaMachine) {
+  
+}
+
 void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
                      const int ESC_KEY, const int ENTER_KEY) {
   wclear(windowRotors);
@@ -90,16 +93,16 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
   getmaxyx(windowRotors, windowHeight, windowWidth);
 
   struct Button {
-    Button(unsigned int index, unsigned int y, unsigned int x,
-           unsigned int height, unsigned int width)
-        : index(index), y(y), x(x), height(height), width(width) {}
+    Button(unsigned int index, unsigned int y, unsigned int x)
+        : index(index), y(y), x(x) {}
 
     unsigned int index, row = 0;
     unsigned int y, x, height, width = 1;
     bool isSelected = false;
   };
+
   std::vector<Button> buttons;
-  buttons.reserve(3);
+  buttons.reserve(enigmaMachine.MAX_ROTORS_);
 
   std::vector<Rotor> allRotors = enigmaMachine.getAvaliableRotors();
   std::vector<Rotor> activeRotors = enigmaMachine.getActiveRotors();
@@ -111,14 +114,13 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
     }
   }
 
-  unsigned int yStep = (windowHeight / 2) - (allRotors.size() / 2);
-  unsigned int xStep =
-      (windowWidth - (longestModelName * enigmaMachine.MAX_ROTORS_)) /
-      (enigmaMachine.MAX_ROTORS_ + 1);
+  unsigned int buttonY = (windowHeight / 2) - (allRotors.size() / 2);
+  unsigned int buttonX = (windowWidth / (enigmaMachine.MAX_ROTORS_ + 1)) -
+                         (longestModelName / enigmaMachine.MAX_ROTORS_);
 
   for (size_t i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
-    Button button = Button(static_cast<unsigned int>(i), yStep, xStep * (i + 1),
-                           allRotors.size() + 1, longestModelName);
+    Button button =
+        Button(static_cast<unsigned int>(i), buttonY, buttonX * (i + 1));
     buttons.push_back(button);
   }
 
@@ -166,7 +168,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       activeRotors = enigmaMachine.getActiveRotors();
     }
 
-    for (size_t i = 0; i < buttons.size(); ++i) {
+    for (size_t i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
       wattrset(windowRotors, A_NORMAL);
 
       if (buttons[i].index == i) {
@@ -190,6 +192,121 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       }
     }
     wrefresh(windowRotors);
+  } while ((keyPress = getch()) != ESC_KEY);
+}
+
+void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
+                         const int ESC_KEY) {
+  wclear(windowPlugBoard);
+  highlightSubwindow(windowPlugBoard);
+
+  int keyPress = 0;
+  unsigned int windowHeight, windowWidth = 0;
+  getmaxyx(windowPlugBoard, windowHeight, windowWidth);
+
+  struct Button {
+    unsigned int index = 0;
+    unsigned int row = 0;
+    unsigned int rowsHeight = Cable::MAX_PLUGS;
+    unsigned int y, x = 1;
+    bool arrow = 0;
+  };
+
+  std::vector<Cable> allCables = enigmaMachine.getActivePlugs();
+  std::string cableID = "Plug ";
+  unsigned int longestCableName = cableID.length() + 1;
+
+  unsigned int buttonY = (windowHeight / 2) - Cable::MAX_PLUGS;
+  unsigned int buttonX = (windowWidth / 2) - (longestCableName / 2);
+
+  Button button;
+  button.y = buttonY;
+  button.x = buttonX;
+
+  do {
+    switch (keyPress) {
+    case KEY_UP:
+      if (button.row > 0) {
+        button.row--;
+      }
+      break;
+    case KEY_RIGHT:
+      if (button.row < Cable::MAX_PLUGS) {
+        enigmaMachine.setPlug(button.index, button.row, 1);
+      } else if (button.row == button.rowsHeight &&
+                 button.index < allCables.size()) {
+        button.index++;
+        button.arrow = 1;
+      }
+      break;
+    case KEY_DOWN:
+      if (button.row < button.rowsHeight) {
+        button.row++;
+      }
+      break;
+    case KEY_LEFT:
+      if (button.row < Cable::MAX_PLUGS) {
+        enigmaMachine.setPlug(button.index, button.row, -1);
+      } else if (button.row == button.rowsHeight && button.index > 0) {
+        button.index--;
+        button.arrow = 0;
+      }
+      break;
+    }
+
+    wattron(windowPlugBoard, A_BOLD);
+    mvwprintw(windowPlugBoard, button.y, button.x, "%s",
+              (cableID + std::to_string(button.index) + " ").c_str());
+
+    char plug = '\0';
+    unsigned int yStep = button.y + 1;
+    unsigned int xStep = button.x;
+    for (unsigned int i = 0; i < Cable::MAX_PLUGS; ++i) {
+      allCables = enigmaMachine.getActivePlugs();
+      wattrset(windowPlugBoard, A_NORMAL);
+      xStep = button.x;
+
+      if (i % 2 == 0) {
+        plug = allCables[button.index].output;
+      } else {
+        plug = allCables[button.index].input;
+      }
+      if (plug == '\0') {
+        plug = ' ';
+      }
+
+      if (button.row == i && button.row <= Cable::MAX_PLUGS) {
+        wattron(windowPlugBoard, COLOR_PAIR(1));
+      }
+      mvwprintw(windowPlugBoard, yStep, xStep, "|");
+      xStep++;
+      mvwprintw(windowPlugBoard, yStep, xStep, "%c", plug);
+      xStep++;
+      mvwprintw(windowPlugBoard, yStep, xStep, "|");
+      yStep++;
+    }
+
+    wattrset(windowPlugBoard, A_NORMAL);
+    xStep = button.x;
+    if (button.row == button.rowsHeight && button.arrow == 0) {
+      wattron(windowPlugBoard, COLOR_PAIR(1));
+      mvwprintw(windowPlugBoard, yStep, xStep, "<");
+      wattroff(windowPlugBoard, COLOR_PAIR(1));
+      xStep += (longestCableName - 1);
+      mvwprintw(windowPlugBoard, yStep, xStep, ">");
+    } else if (button.row == button.rowsHeight && button.arrow == 1) {
+      mvwprintw(windowPlugBoard, yStep, xStep, "<");
+      xStep += (longestCableName - 1);
+      wattron(windowPlugBoard, COLOR_PAIR(1));
+      mvwprintw(windowPlugBoard, yStep, xStep, ">");
+      wattroff(windowPlugBoard, COLOR_PAIR(1));
+    } else {
+      mvwprintw(windowPlugBoard, yStep, xStep, "<");
+      xStep += (longestCableName - 1);
+      mvwprintw(windowPlugBoard, yStep, xStep, ">");
+    }
+
+    wrefresh(windowPlugBoard);
   } while ((keyPress = getch()) != ESC_KEY);
 }
 
@@ -269,6 +386,7 @@ void removeKeyPress(
 
 void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine) {
   const unsigned int MAX_SYMBOLS_COLUMN = 3;
+
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowRotors, windowHeight, windowWidth);
 
@@ -277,7 +395,6 @@ void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine) {
   unsigned int yStep = windowHeight / MAX_SYMBOLS_COLUMN;
 
   for (unsigned int i = 0; i < MAX_SYMBOLS_COLUMN; ++i) {
-    yStep++;
     unsigned int xStep = (windowWidth / 2) - EnigmaMachine::MAX_ROTORS_ * 2;
 
     if (i == MAX_SYMBOLS_COLUMN / 2) {
@@ -297,24 +414,63 @@ void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine) {
       mvwprintw(windowRotors, yStep, xStep, " ");
       xStep++;
     }
+    yStep++;
+  }
+}
+
+void drawPlugBoard(WINDOW *windowPlugBoard,
+                   const EnigmaMachine &enigmaMachine) {
+  unsigned int windowHeight, windowWidth = 0;
+  getmaxyx(windowPlugBoard, windowHeight, windowWidth);
+
+  std::vector<Cable> activePlugs = enigmaMachine.getActivePlugs();
+
+  const unsigned int plugWidth = 4;
+
+  char plug = '\0';
+  unsigned int yStep = (windowHeight / 2) - 1;
+  for (unsigned int i = 0; i < Cable::MAX_PLUGS; ++i) {
+    unsigned int xStep =
+        (windowWidth / 2) - ((activePlugs.size() * plugWidth) / 2);
+
+    for (size_t j = 0; j < activePlugs.size(); ++j) {
+      if (activePlugs[j].input == '\0' || activePlugs[j].output == '\0') {
+        plug = ' ';
+      } else if (i % 2 == 0) {
+        plug = activePlugs[j].output;
+      } else {
+        plug = activePlugs[j].input;
+      }
+      mvwprintw(windowPlugBoard, yStep, xStep, "|");
+      xStep++;
+      mvwprintw(windowPlugBoard, yStep, xStep, "%c", plug);
+      xStep++;
+      mvwprintw(windowPlugBoard, yStep, xStep, "|");
+      xStep++;
+      mvwprintw(windowPlugBoard, yStep, xStep, " ");
+      xStep++;
+    }
+    yStep++;
   }
 }
 
 bool drawOutput(WINDOW *windowOutput, int inputKey) {
-  wclear(windowOutput);
-
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowOutput, windowHeight, windowWidth);
 
   const unsigned int Y_PADDING = 2;
   const unsigned int X_PADDING = 4;
-  const unsigned int MAX_HEIGHT_CHARACTERS = windowHeight - Y_PADDING;
-  const unsigned int MAX_WIDTH_CHARACTERS = windowWidth - X_PADDING;
+  const unsigned int MAX_HEIGHT_CHARACTERS = windowHeight - (Y_PADDING * 2);
+  const unsigned int MAX_WIDTH_CHARACTERS = windowWidth - (X_PADDING * 2);
 
   static std::string displayedText;
   bool spinRotor = true;
+  std::vector<std::string> substrings = {};
+  unsigned int lines = (unsigned int)std::ceil((float)displayedText.length() /
+                                               MAX_WIDTH_CHARACTERS);
 
   if (inputKey == KEY_BACKSPACE) {
+    wclear(windowOutput);
     if (displayedText.length() > 0) {
       if (displayedText.back() == ' ') {
         spinRotor = false;
@@ -325,35 +481,26 @@ bool drawOutput(WINDOW *windowOutput, int inputKey) {
       return spinRotor;
     }
   } else if (inputKey != KEY_BACKSPACE && inputKey != 0) {
+    if (lines > MAX_HEIGHT_CHARACTERS) {
+      return false;
+    }
     displayedText += inputKey;
   }
 
-  std::vector<std::string> substrings = {};
-  unsigned int lines = (unsigned int)std::ceil((float)displayedText.length() /
-                                               MAX_WIDTH_CHARACTERS);
-
   if (displayedText.length() > MAX_WIDTH_CHARACTERS) {
     unsigned int start = 0;
-    unsigned int step = displayedText.length() / lines;
-
     for (unsigned int i = 0; i < lines; ++i) {
-      unsigned int end = step * (i + 1);
-      std::string substring = displayedText.substr(start, end);
+      std::string substring = displayedText.substr(start, MAX_WIDTH_CHARACTERS);
+      start += MAX_WIDTH_CHARACTERS;
       substrings.push_back(substring);
-      start = end;
     }
   } else {
     substrings.push_back(displayedText);
   }
 
-  unsigned int yStep = (windowHeight / 2) - (lines / 2);
-  for (const auto &substring : substrings) {
-    unsigned int xStep = (windowWidth / 2) - (substring.length() / 2);
-    for (unsigned long int j = 0; j < substring.length(); ++j) {
-      mvwprintw(windowOutput, yStep, xStep, "%c", substring[j]);
-      xStep++;
-    }
-    yStep++;
+  for (size_t i = 0; i < substrings.size(); ++i) {
+    mvwprintw(windowOutput, (Y_PADDING + i), X_PADDING, "%s",
+              substrings[i].c_str());
   }
 
   return spinRotor;

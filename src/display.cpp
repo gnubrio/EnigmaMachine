@@ -79,8 +79,66 @@ void highlightSubwindow(WINDOW *subwindow) {
   wattroff(subwindow, A_BOLD);
 }
 
-void escapeMenu(WINDOW *windowMain, EnigmaMachine &enigmaMachine) {
-  
+bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
+                const int ENTER_KEY) {
+  wclear(windowOutput);
+  highlightSubwindow(windowOutput);
+
+  int keyPress = 0;
+  bool reset = false;
+  unsigned int windowHeight, windowWidth = 0;
+  getmaxyx(windowOutput, windowHeight, windowWidth);
+
+  std::array<std::string, 3> selections = {"Resume", "Reset", "Exit"};
+  unsigned int yStep = windowHeight / selections.size();
+  unsigned int xStep = windowWidth / 2;
+  unsigned int longestSelectionName = 1;
+  for (const auto &selection : selections) {
+    unsigned int length = selection.length();
+    if (length > longestSelectionName) {
+      longestSelectionName = length;
+    }
+  }
+
+  unsigned int selection = 0;
+  do {
+    switch (keyPress) {
+    case KEY_UP:
+      if (selection > 0) {
+        selection--;
+      }
+      break;
+    case KEY_DOWN:
+      if (selection < selections.size()) {
+        selection++;
+      }
+      break;
+    }
+    if (keyPress == ENTER_KEY) {
+      if (selection == 0) {
+        break;
+      } else if (selection == 1) {
+        enigmaMachine = setupEnigmaMachine();
+        reset = true;
+      } else if (selection == 2) {
+        endwin();
+        exit(0);
+      }
+    }
+
+    for (size_t i = 0; i < selections.size(); ++i) {
+      if (selection == i) {
+        wattron(windowOutput, COLOR_PAIR(1));
+      } else {
+        wattrset(windowOutput, A_NORMAL);
+      }
+      mvwprintw(windowOutput, yStep + i, xStep - (longestSelectionName / 2),
+                "%s", selections[i].c_str());
+    }
+
+    wrefresh(windowOutput);
+  } while ((keyPress = getch()));
+  return reset;
 }
 
 void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
@@ -454,7 +512,7 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
   }
 }
 
-bool drawOutput(WINDOW *windowOutput, int inputKey) {
+bool drawOutput(WINDOW *windowOutput, int inputKey, bool reset) {
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowOutput, windowHeight, windowWidth);
 
@@ -464,6 +522,9 @@ bool drawOutput(WINDOW *windowOutput, int inputKey) {
   const unsigned int MAX_WIDTH_CHARACTERS = windowWidth - (X_PADDING * 2);
 
   static std::string displayedText;
+  if (reset) {
+    displayedText = "";
+  }
   bool spinRotor = true;
   std::vector<std::string> substrings = {};
   unsigned int lines = (unsigned int)std::ceil((float)displayedText.length() /

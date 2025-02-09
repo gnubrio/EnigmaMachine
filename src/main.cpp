@@ -42,6 +42,15 @@ int main(void) {
         enigmaMachine.spinRotors(1);
         drawRotors(subwindows.rotors, enigmaMachine);
       }
+    } else if (keyPress == ESC_KEY) {
+      bool reset = escapeMenu(subwindows.output, enigmaMachine, ENTER_KEY);
+
+      wclear(subwindows.output);
+      drawOutput(subwindows.output, 0, reset);
+      if (reset) {
+        drawRotors(subwindows.rotors, enigmaMachine);
+        drawPlugBoard(subwindows.plugBoard, enigmaMachine);
+      }
     } else if (keyPress == KEY_RESIZE) {
       keyPress = 0;
       clearWindows(windowMain, subwindows);
@@ -54,7 +63,6 @@ int main(void) {
       drawRotors(subwindows.rotors, enigmaMachine);
       drawPlugBoard(subwindows.plugBoard, enigmaMachine);
     }
-
     switch (keyPress) {
     case KEY_UP:
       rotorConfigMenu(subwindows.rotors, enigmaMachine, ESC_KEY, ENTER_KEY);
@@ -72,7 +80,7 @@ int main(void) {
 
     drawSubwindowBoxes(subwindows);
     refreshWindows(windowMain, subwindows);
-  } while ((keyPress = getch()) != ESC_KEY);
+  } while ((keyPress = getch()));
 
   endwin();
   return 0;

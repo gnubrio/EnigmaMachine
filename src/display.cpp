@@ -15,6 +15,7 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
   noecho();
   keypad(stdscr, TRUE);
   curs_set(0);
+  ESCDELAY = 1;
 
   if (has_colors()) {
     start_color();
@@ -80,7 +81,7 @@ void highlightSubwindow(WINDOW *subwindow) {
 }
 
 bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
-                const int ENTER_KEY) {
+                const int ESC_KEY, const int ENTER_KEY) {
   wclear(windowOutput);
   highlightSubwindow(windowOutput);
 
@@ -109,7 +110,7 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
       }
       break;
     case KEY_DOWN:
-      if (selection < selections.size()) {
+      if (selection < selections.size() - 1) {
         selection++;
       }
       break;
@@ -124,6 +125,8 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
         endwin();
         exit(0);
       }
+    } else if (keyPress == ESC_KEY) {
+      break;
     }
 
     for (size_t i = 0; i < selections.size(); ++i) {
@@ -138,6 +141,7 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
 
     wrefresh(windowOutput);
   } while ((keyPress = getch()));
+  wattrset(windowOutput, A_NORMAL);
   return reset;
 }
 
@@ -227,14 +231,9 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
     }
 
     for (size_t i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
-      wattrset(windowRotors, A_NORMAL);
-
-      if (buttons[i].index == i) {
-        wattron(windowRotors, A_BOLD);
-      } else {
-        wattroff(windowRotors, A_BOLD);
-      }
+      wattron(windowRotors, A_BOLD);
       mvwprintw(windowRotors, buttons[i].y, buttons[i].x, "Slot: %zu", i + 1);
+      wattroff(windowRotors, A_BOLD);
 
       for (size_t j = 0; j < allRotors.size(); ++j) {
         if (buttons[i].isSelected && buttons[i].row == j) {
@@ -247,6 +246,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
         }
         mvwprintw(windowRotors, (buttons[i].y + 1) + j, buttons[i].x, "%s",
                   allRotors[j].getModelName().c_str());
+        wattrset(windowRotors, A_NORMAL);
       }
     }
     wrefresh(windowRotors);
@@ -292,7 +292,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
       if (button.row < Cable::MAX_PLUGS) {
         enigmaMachine.setPlug(button.index, button.row, 1);
       } else if (button.row == button.rowsHeight &&
-                 button.index < allCables.size()) {
+                 button.index < allCables.size() - 1) {
         button.index++;
         button.arrow = 1;
       }
@@ -314,7 +314,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
 
     wattron(windowPlugBoard, A_BOLD);
     mvwprintw(windowPlugBoard, button.y, button.x, "%s",
-              (cableID + std::to_string(button.index) + " ").c_str());
+              (cableID + std::to_string(button.index + 1) + " ").c_str());
 
     char plug = '\0';
     unsigned int yStep = button.y + 1;
@@ -368,7 +368,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
   } while ((keyPress = getch()) != ESC_KEY);
 }
 
-void drawKeyboard(WINDOW *windowKeyboard, int keyPress) {
+void drawKeyboard(WINDOW *windowKeyboard, const int keyPress) {
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowKeyboard, windowHeight, windowWidth);
 
@@ -420,7 +420,7 @@ void drawKeyboard(WINDOW *windowKeyboard, int keyPress) {
 
 void removeKeyPress(
     WINDOW *windowKeyboard,
-    std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
+    const std::pair<char, std::pair<unsigned int, unsigned int>> activeKey) {
   static std::mutex activeKeyMutex;
   static std::set<char> activeKeys;
 
@@ -443,10 +443,10 @@ void removeKeyPress(
 }
 
 void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine) {
-  const unsigned int MAX_SYMBOLS_COLUMN = 3;
-
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowRotors, windowHeight, windowWidth);
+
+  const unsigned int MAX_SYMBOLS_COLUMN = 3;
 
   std::vector<Rotor> activeRotors = enigmaMachine.getActiveRotors();
 
@@ -483,13 +483,13 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
 
   std::vector<Cable> activePlugs = enigmaMachine.getActivePlugs();
 
-  const unsigned int plugWidth = 4;
+  const unsigned int PLUG_WIDTH = 4;
 
   char plug = '\0';
   unsigned int yStep = (windowHeight / 2) - 1;
   for (unsigned int i = 0; i < Cable::MAX_PLUGS; ++i) {
     unsigned int xStep =
-        (windowWidth / 2) - ((activePlugs.size() * plugWidth) / 2);
+        (windowWidth / 2) - ((activePlugs.size() * PLUG_WIDTH) / 2);
 
     for (size_t j = 0; j < activePlugs.size(); ++j) {
       if (activePlugs[j].input == '\0' || activePlugs[j].output == '\0') {
@@ -512,7 +512,7 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
   }
 }
 
-bool drawOutput(WINDOW *windowOutput, int inputKey, bool reset) {
+bool drawOutput(WINDOW *windowOutput, const int inputKey, const bool reset) {
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowOutput, windowHeight, windowWidth);
 

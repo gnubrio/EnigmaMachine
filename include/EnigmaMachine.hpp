@@ -3,6 +3,7 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class EnigmaMachine;
 EnigmaMachine setupEnigmaMachine();
@@ -30,9 +31,7 @@ protected:
   static constexpr unsigned int MAX_SYMBOLS_ = 26;
   std::string modelName_ = "";
   std::array<char, MAX_SYMBOLS_> symbols_ = {};
-  static constexpr std::array<char, MAX_SYMBOLS_> alphabet_ = {
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-      'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+  std::unordered_map<char, int> alphabet_;
   unsigned int position_ = 0;
 
 private:

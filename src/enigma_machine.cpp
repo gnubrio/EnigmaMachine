@@ -1,5 +1,4 @@
 #include "../include/EnigmaMachine.hpp"
-#include <memory>
 
 EnigmaMachine setupEnigmaMachine() {
   Rotor rotorI = Rotor("Enigma I | Rotor I", "EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q');
@@ -39,6 +38,10 @@ Rotor::Rotor(const std::string &modelName, const std::string &symbols,
     }
     activeSymbol_ = symbols[0];
   }
+
+  for (size_t i = 0; i < MAX_SYMBOLS_; ++i) {
+    alphabet_['A' + i] = i;
+  }
 }
 
 void Rotor::spin(int direction) {
@@ -62,18 +65,16 @@ void Rotor::spin(int direction) {
 }
 
 void Rotor::transfer(char &key) {
-  for (unsigned int i = 0; i < MAX_SYMBOLS_; ++i) {
-    if (key == alphabet_[i]) {
-      key = shiftIndex(symbols_, position_, i);
-    }
+  if (alphabet_.find(key) != alphabet_.end()) {
+    key = shiftIndex(symbols_, position_, alphabet_.at(key));
   }
 }
 
 template <typename T, size_t N>
-T &Rotor::shiftIndex(std::array<T, N> &activeRotors, size_t index,
+T &Rotor::shiftIndex(std::array<T, N> &symbols, size_t index,
                      size_t shift) {
   size_t start = (index + shift) % N;
-  return activeRotors[start];
+  return symbols[start];
 }
 
 const std::string &Rotor::getModelName() const { return modelName_; }
@@ -120,6 +121,16 @@ void Cable::transfer(char &key) {
   }
 }
 
+EnigmaMachine::EnigmaMachine(std::vector<Rotor> &rotors,
+                             std::vector<Reflector> &reflectors,
+                             std::vector<Cable> &cables)
+    : avaliableRotors_(rotors), avaliableReflectors_(reflectors),
+      activePlugs_(cables) {
+  for (unsigned int i = 0; i < MAX_ROTORS_; ++i) {
+    activeRotors_.push_back(avaliableRotors_[i]);
+  }
+}
+
 void EnigmaMachine::setPlug(const int index, const bool input,
                             const int direction) {
   char *plug;
@@ -141,16 +152,6 @@ void EnigmaMachine::setPlug(const int index, const bool input,
     } else if (*plug > 'A') {
       (*plug)--;
     }
-  }
-}
-
-EnigmaMachine::EnigmaMachine(std::vector<Rotor> &rotors,
-                             std::vector<Reflector> &reflectors,
-                             std::vector<Cable> &cables)
-    : avaliableRotors_(rotors), avaliableReflectors_(reflectors),
-      activePlugs_(cables) {
-  for (unsigned int i = 0; i < MAX_ROTORS_; ++i) {
-    activeRotors_.push_back(avaliableRotors_[i]);
   }
 }
 

@@ -127,6 +127,8 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
       }
     } else if (keyPress == ESC_KEY) {
       break;
+    } else if (keyPress == KEY_RESIZE) {
+      break;
     }
 
     for (size_t i = 0; i < selections.size(); ++i) {
@@ -228,6 +230,8 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       enigmaMachine.setRotor(allRotors[buttonPtr->row],
                              activeRotors[buttonPtr->index], buttonPtr->index);
       activeRotors = enigmaMachine.getActiveRotors();
+    } else if (keyPress == KEY_RESIZE) {
+      break;
     }
 
     for (size_t i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
@@ -309,6 +313,9 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
         button.index--;
         button.arrow = 0;
       }
+      break;
+    }
+    if (keyPress == KEY_RESIZE) {
       break;
     }
 

@@ -71,8 +71,7 @@ void Rotor::transfer(char &key) {
 }
 
 template <typename T, size_t N>
-T &Rotor::shiftIndex(std::array<T, N> &symbols, size_t index,
-                     size_t shift) {
+T &Rotor::shiftIndex(std::array<T, N> &symbols, size_t index, size_t shift) {
   size_t start = (index + shift) % N;
   return symbols[start];
 }

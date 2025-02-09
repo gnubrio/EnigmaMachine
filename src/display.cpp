@@ -161,7 +161,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
         : index(index), y(y), x(x) {}
 
     unsigned int index, row = 0;
-    unsigned int y, x, height, width = 1;
+    unsigned int y, x = 1;
     bool isSelected = false;
   };
 
@@ -323,7 +323,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
     mvwprintw(windowPlugBoard, button.y, button.x, "%s",
               (cableID + std::to_string(button.index + 1) + " ").c_str());
 
-    char plug = '\0';
+    char plug;
     unsigned int yStep = button.y + 1;
     unsigned int xStep = button.x;
     for (unsigned int i = 0; i < Cable::MAX_PLUGS; ++i) {
@@ -340,7 +340,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
         plug = ' ';
       }
 
-      if (button.row == i && button.row <= Cable::MAX_PLUGS) {
+      if (button.row == i) {
         wattron(windowPlugBoard, COLOR_PAIR(1));
       }
       mvwprintw(windowPlugBoard, yStep, xStep, "|");
@@ -352,7 +352,6 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
     }
 
     wattrset(windowPlugBoard, A_NORMAL);
-    xStep = button.x;
     if (button.row == button.rowsHeight && button.arrow == 0) {
       wattron(windowPlugBoard, COLOR_PAIR(1));
       mvwprintw(windowPlugBoard, yStep, xStep, "<");
@@ -492,7 +491,7 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
 
   const unsigned int PLUG_WIDTH = 4;
 
-  char plug = '\0';
+  char plug;
   unsigned int yStep = (windowHeight / 2) - 1;
   for (unsigned int i = 0; i < Cable::MAX_PLUGS; ++i) {
     unsigned int xStep =

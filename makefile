@@ -13,7 +13,7 @@ BUILD_DIR = build
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
-TARGET = program
+TARGET = $(BUILD_DIR)/program
 
 all: $(TARGET)
 

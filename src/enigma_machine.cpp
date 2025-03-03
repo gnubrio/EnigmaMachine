@@ -208,6 +208,7 @@ void EnigmaMachine::setRotor(const Rotor &inputRotor,
       } else {
         swap = true;
         swapIndex = i;
+        break;
       }
     }
   }

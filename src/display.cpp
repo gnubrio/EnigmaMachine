@@ -23,6 +23,8 @@ int setupWindows(WINDOW *windowMain, Subwindows &subwindows) {
 
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
+  } else {
+    return 1;
   }
 
   unsigned int terminalHeight, terminalWidth = 0;
@@ -85,8 +87,6 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
   wclear(windowOutput);
   highlightSubwindow(windowOutput);
 
-  int keyPress = 0;
-  bool reset = false;
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowOutput, windowHeight, windowWidth);
 
@@ -101,7 +101,9 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
     }
   }
 
+  int keyPress = 0;
   unsigned int selection = 0;
+  bool reset = false;
   do {
     switch (keyPress) {
     case KEY_UP:
@@ -152,7 +154,6 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
   wclear(windowRotors);
   highlightSubwindow(windowRotors);
 
-  int keyPress = 0;
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowRotors, windowHeight, windowWidth);
 
@@ -169,7 +170,9 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
   buttons.reserve(enigmaMachine.MAX_ROTORS_);
 
   std::vector<Rotor> allRotors = enigmaMachine.getAvaliableRotors();
+  unsigned int allRotorsSize = allRotors.size();
   std::vector<Rotor> activeRotors = enigmaMachine.getActiveRotors();
+
   unsigned int longestModelName = 0;
   for (const auto &rotor : allRotors) {
     unsigned int modelNameLength = rotor.getModelName().length();
@@ -178,7 +181,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
     }
   }
 
-  unsigned int buttonY = (windowHeight / 2) - (allRotors.size() / 2);
+  unsigned int buttonY = (windowHeight / 2) - (allRotorsSize / 2);
   unsigned int buttonX = (windowWidth / (enigmaMachine.MAX_ROTORS_ + 1)) -
                          (longestModelName / enigmaMachine.MAX_ROTORS_);
 
@@ -194,6 +197,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
     return;
   }
 
+  int keyPress = 0;
   Button *buttonPtr = &buttons[0];
   do {
     switch (keyPress) {
@@ -212,7 +216,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       }
       break;
     case KEY_DOWN:
-      if (buttonPtr->row < allRotors.size() - 1) {
+      if (buttonPtr->row < allRotorsSize - 1) {
         buttonPtr->row++;
       }
       break;
@@ -239,7 +243,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       mvwprintw(windowRotors, buttons[i].y, buttons[i].x, "Slot: %zu", i + 1);
       wattroff(windowRotors, A_BOLD);
 
-      for (size_t j = 0; j < allRotors.size(); ++j) {
+      for (size_t j = 0; j < allRotorsSize; ++j) {
         if (buttons[i].isSelected && buttons[i].row == j) {
           wattron(windowRotors, COLOR_PAIR(1));
         } else if (activeRotors[i].getModelName() ==
@@ -262,7 +266,6 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
   wclear(windowPlugBoard);
   highlightSubwindow(windowPlugBoard);
 
-  int keyPress = 0;
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowPlugBoard, windowHeight, windowWidth);
 
@@ -285,6 +288,7 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
   button.y = buttonY;
   button.x = buttonX;
 
+  int keyPress = 0;
   do {
     switch (keyPress) {
     case KEY_UP:
@@ -431,8 +435,6 @@ void removeKeyPress(
   static std::set<char> activeKeys;
 
   char key = activeKey.first;
-  unsigned int yCoord = activeKey.second.first;
-  unsigned int xCoord = activeKey.second.second;
 
   {
     std::lock_guard<std::mutex> activeKeyLock(activeKeyMutex);
@@ -443,9 +445,17 @@ void removeKeyPress(
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
-  mvwprintw(windowKeyboard, yCoord, xCoord, "%c", key);
 
-  activeKeys.erase(key);
+  {
+    unsigned int yCoord = activeKey.second.first;
+    unsigned int xCoord = activeKey.second.second;
+
+    std::lock_guard<std::mutex> lock(activeKeyMutex);
+    mvwprintw(windowKeyboard, yCoord, xCoord, "%c", key);
+    activeKeys.erase(key);
+  }
+
+  wrefresh(windowKeyboard);
 }
 
 void drawRotors(WINDOW *windowRotors, const EnigmaMachine &enigmaMachine) {
@@ -549,7 +559,8 @@ bool drawOutput(WINDOW *windowOutput, const int inputKey, const bool reset) {
     }
   } else if (inputKey != KEY_BACKSPACE && inputKey != 0) {
     if (lines > MAX_HEIGHT_CHARACTERS) {
-      return false;
+      spinRotor = false;
+      return spinRotor;
     }
     displayedText += inputKey;
   }

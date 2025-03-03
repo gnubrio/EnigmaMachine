@@ -4,7 +4,7 @@ LDFLAGS = -lncurses
 
 DEBUG = 1
 ifeq ($(DEBUG), 1)
-	CXXFLAGS += -g
+	CXXFLAGS += -O0 -g
 endif
 
 SRC_DIR = src
@@ -13,7 +13,7 @@ BUILD_DIR = build
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
-TARGET = $(BUILD_DIR)/program
+TARGET = program
 
 all: $(TARGET)
 

@@ -48,6 +48,8 @@ int main(void) {
       wclear(subwindows.output);
       drawOutput(subwindows.output, 0, reset);
       if (reset) {
+        clearWindows(windowMain, subwindows);
+        drawKeyboard(subwindows.keyboard, keyPress);
         drawRotors(subwindows.rotors, enigmaMachine);
         drawPlugBoard(subwindows.plugBoard, enigmaMachine);
       }

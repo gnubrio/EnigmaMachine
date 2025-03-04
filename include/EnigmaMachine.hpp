@@ -69,6 +69,7 @@ public:
   void spinRotors(int direction = -1);
   void setRotor(const Rotor &inputRotor, const Rotor &originalRotor,
                 unsigned int index);
+  void setSymbol(const Rotor &rotor, int direction);
   void setPlug(const int index, const bool input, const int direction);
 
   const std::vector<Rotor> &getAvaliableRotors() const;

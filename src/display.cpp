@@ -185,9 +185,8 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
   unsigned int buttonX = (windowWidth / (enigmaMachine.MAX_ROTORS_ + 1)) -
                          (longestModelName / enigmaMachine.MAX_ROTORS_);
 
-  for (size_t i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
-    Button button =
-        Button(static_cast<unsigned int>(i), buttonY, buttonX * (i + 1));
+  for (unsigned int i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
+    Button button = Button(i, buttonY, buttonX * (i + 1));
     buttons.push_back(button);
   }
 
@@ -199,38 +198,56 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
 
   int keyPress = 0;
   Button *buttonPtr = &buttons[0];
+  bool symbolSelection = false;
+  bool symbolSelectionDirection = false;
   do {
     switch (keyPress) {
     case KEY_UP:
       if (buttonPtr->row > 0) {
         buttonPtr->row--;
+        symbolSelection = false;
       }
       break;
     case KEY_RIGHT:
-      if (buttonPtr->index < enigmaMachine.MAX_ROTORS_ - 1) {
+      if (symbolSelection) {
+        enigmaMachine.setSymbol(activeRotors[buttonPtr->index], -1);
+        activeRotors = enigmaMachine.getActiveRotors();
+        symbolSelectionDirection = true;
+      } else if (buttonPtr->index < enigmaMachine.MAX_ROTORS_ - 1) {
         unsigned int buttonRow = buttonPtr->row;
         buttonPtr->isSelected = false;
         buttonPtr = &buttons[buttonPtr->index + 1];
         buttonPtr->row = buttonRow;
         buttonPtr->isSelected = true;
+
+        symbolSelectionDirection = false;
       }
       break;
     case KEY_DOWN:
       if (buttonPtr->row < allRotorsSize - 1) {
         buttonPtr->row++;
+      } else if ((!symbolSelection) && buttonPtr->row == allRotorsSize - 1) {
+        buttonPtr->row++;
+        symbolSelection = true;
       }
       break;
     case KEY_LEFT:
-      if (buttonPtr->index > 0) {
+      if (symbolSelection) {
+        enigmaMachine.setSymbol(activeRotors[buttonPtr->index], 1);
+        activeRotors = enigmaMachine.getActiveRotors();
+        symbolSelectionDirection = false;
+      } else if (buttonPtr->index > 0) {
         unsigned int buttonRow = buttonPtr->row;
         buttonPtr->isSelected = false;
         buttonPtr = &buttons[buttonPtr->index - 1];
         buttonPtr->row = buttonRow;
         buttonPtr->isSelected = true;
+
+        symbolSelectionDirection = false;
       }
       break;
     }
-    if (keyPress == ENTER_KEY) {
+    if (keyPress == ENTER_KEY && (!symbolSelection)) {
       enigmaMachine.setRotor(allRotors[buttonPtr->row],
                              activeRotors[buttonPtr->index], buttonPtr->index);
       activeRotors = enigmaMachine.getActiveRotors();
@@ -243,7 +260,8 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       mvwprintw(windowRotors, buttons[i].y, buttons[i].x, "Slot: %zu", i + 1);
       wattroff(windowRotors, A_BOLD);
 
-      for (size_t j = 0; j < allRotorsSize; ++j) {
+      unsigned int j = 0;
+      for (; j < allRotorsSize; ++j) {
         if (buttons[i].isSelected && buttons[i].row == j) {
           wattron(windowRotors, COLOR_PAIR(1));
         } else if (activeRotors[i].getModelName() ==
@@ -252,10 +270,25 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
         } else {
           wattroff(windowRotors, COLOR_PAIR(1));
         }
-        mvwprintw(windowRotors, (buttons[i].y + 1) + j, buttons[i].x, "%s",
+        mvwprintw(windowRotors, buttons[i].y + j + 1, buttons[i].x, "%s",
                   allRotors[j].getModelName().c_str());
         wattrset(windowRotors, A_NORMAL);
       }
+
+      unsigned int xStep = longestModelName / 2;
+      if (!symbolSelectionDirection && buttons[i].row == j) {
+        wattron(windowRotors, COLOR_PAIR(1));
+      }
+      mvwprintw(windowRotors, buttons[i].y + j + 1, buttons[i].x, "<");
+      wattrset(windowRotors, A_NORMAL);
+      mvwprintw(windowRotors, buttons[i].y + j + 1, buttons[i].x + xStep, "%c",
+                activeRotors[i].getActiveSymbol());
+      xStep += xStep;
+      if (symbolSelectionDirection && buttons[i].row == j) {
+        wattron(windowRotors, COLOR_PAIR(1));
+      }
+      mvwprintw(windowRotors, buttons[i].y + j + 1, buttons[i].x + xStep, ">");
+      wattrset(windowRotors, A_NORMAL);
     }
     wrefresh(windowRotors);
   } while ((keyPress = getch()) != ESC_KEY);

@@ -219,6 +219,15 @@ void EnigmaMachine::setRotor(const Rotor &inputRotor,
   activeRotors_[index] = inputRotor;
 }
 
+void EnigmaMachine::setSymbol(const Rotor &rotor, int direction) {
+  for (auto &activeRotor : activeRotors_) {
+    if (activeRotor == rotor) {
+      activeRotor.spin(direction);
+      break;
+    }
+  }
+}
+
 const std::vector<Rotor> &EnigmaMachine::getAvaliableRotors() const {
   return avaliableRotors_;
 }

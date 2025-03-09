@@ -1,9 +1,8 @@
 #pragma once
 #include <array>
-#include <cctype>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class EnigmaMachine;
 EnigmaMachine setupEnigmaMachine();

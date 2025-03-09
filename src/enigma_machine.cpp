@@ -1,4 +1,5 @@
 #include "../include/EnigmaMachine.hpp"
+#include <algorithm>
 
 EnigmaMachine setupEnigmaMachine() {
   Rotor rotorI = Rotor("Enigma I | Rotor I", "EKMFLGDQVZNTOWYHXUSPAIBRCJ", 'Q');
@@ -126,7 +127,7 @@ EnigmaMachine::EnigmaMachine(std::vector<Rotor> &rotors,
     : avaliableRotors_(rotors), avaliableReflectors_(reflectors),
       activePlugs_(cables) {
   for (unsigned int i = 0; i < MAX_ROTORS_; ++i) {
-    activeRotors_.push_back(avaliableRotors_[i]);
+    activeRotors_.emplace_back(avaliableRotors_[i]);
   }
 }
 
@@ -220,11 +221,10 @@ void EnigmaMachine::setRotor(const Rotor &inputRotor,
 }
 
 void EnigmaMachine::setSymbol(const Rotor &rotor, int direction) {
-  for (auto &activeRotor : activeRotors_) {
-    if (activeRotor == rotor) {
-      activeRotor.spin(direction);
-      break;
-    }
+  auto it = std::find_if(activeRotors_.begin(), activeRotors_.end(),
+                         [&rotor](const Rotor &r) { return r == rotor; });
+  if (it != activeRotors_.end()) {
+    it->spin(direction);
   }
 }
 

@@ -43,7 +43,8 @@ int main(void) {
         drawRotors(subwindows.rotors, enigmaMachine);
       }
     } else if (keyPress == ESC_KEY) {
-      bool reset = escapeMenu(subwindows.output, enigmaMachine, ESC_KEY, ENTER_KEY);
+      bool reset =
+          escapeMenu(subwindows.output, enigmaMachine, ESC_KEY, ENTER_KEY);
 
       wclear(subwindows.output);
       drawOutput(subwindows.output, 0, reset);

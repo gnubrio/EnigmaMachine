@@ -108,12 +108,12 @@ bool escapeMenu(WINDOW *windowOutput, EnigmaMachine &enigmaMachine,
     switch (keyPress) {
     case KEY_UP:
       if (selection > 0) {
-        selection--;
+        --selection;
       }
       break;
     case KEY_DOWN:
       if (selection < selections.size() - 1) {
-        selection++;
+        ++selection;
       }
       break;
     }
@@ -170,7 +170,6 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
   buttons.reserve(enigmaMachine.MAX_ROTORS_);
 
   std::vector<Rotor> allRotors = enigmaMachine.getAvaliableRotors();
-  unsigned int allRotorsSize = allRotors.size();
   std::vector<Rotor> activeRotors = enigmaMachine.getActiveRotors();
 
   unsigned int longestModelName = 0;
@@ -181,13 +180,13 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
     }
   }
 
-  unsigned int buttonY = (windowHeight / 2) - (allRotorsSize / 2);
+  unsigned int buttonY = (windowHeight / 2) - (allRotors.size() / 2);
   unsigned int buttonX = (windowWidth / (enigmaMachine.MAX_ROTORS_ + 1)) -
                          (longestModelName / enigmaMachine.MAX_ROTORS_);
 
   for (unsigned int i = 0; i < enigmaMachine.MAX_ROTORS_; ++i) {
     Button button = Button(i, buttonY, buttonX * (i + 1));
-    buttons.push_back(button);
+    buttons.emplace_back(button);
   }
 
   if (!buttons.empty()) {
@@ -224,9 +223,9 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       }
       break;
     case KEY_DOWN:
-      if (buttonPtr->row < allRotorsSize - 1) {
+      if (buttonPtr->row < allRotors.size() - 1) {
         buttonPtr->row++;
-      } else if ((!symbolSelection) && buttonPtr->row == allRotorsSize - 1) {
+      } else if ((!symbolSelection) && buttonPtr->row == allRotors.size() - 1) {
         buttonPtr->row++;
         symbolSelection = true;
       }
@@ -261,7 +260,7 @@ void rotorConfigMenu(WINDOW *windowRotors, EnigmaMachine &enigmaMachine,
       wattroff(windowRotors, A_BOLD);
 
       unsigned int j = 0;
-      for (; j < allRotorsSize; ++j) {
+      for (; j < allRotors.size(); ++j) {
         if (buttons[i].isSelected && buttons[i].row == j) {
           wattron(windowRotors, COLOR_PAIR(1));
         } else if (activeRotors[i].getModelName() ==
@@ -531,7 +530,6 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
   getmaxyx(windowPlugBoard, windowHeight, windowWidth);
 
   std::vector<Cable> activePlugs = enigmaMachine.getActivePlugs();
-
   const unsigned int PLUG_WIDTH = 4;
 
   char plug;
@@ -565,8 +563,7 @@ bool drawOutput(WINDOW *windowOutput, const int inputKey, const bool reset) {
   unsigned int windowHeight, windowWidth = 0;
   getmaxyx(windowOutput, windowHeight, windowWidth);
 
-  const unsigned int Y_PADDING = 2;
-  const unsigned int X_PADDING = 4;
+  const unsigned int Y_PADDING = 2, X_PADDING = 4;
   const unsigned int MAX_HEIGHT_CHARACTERS = windowHeight - (Y_PADDING * 2);
   const unsigned int MAX_WIDTH_CHARACTERS = windowWidth - (X_PADDING * 2);
 
@@ -590,7 +587,7 @@ bool drawOutput(WINDOW *windowOutput, const int inputKey, const bool reset) {
       spinRotor = false;
       return spinRotor;
     }
-  } else if (inputKey != KEY_BACKSPACE && inputKey != 0) {
+  } else if (inputKey != 0) {
     if (lines > MAX_HEIGHT_CHARACTERS) {
       spinRotor = false;
       return spinRotor;

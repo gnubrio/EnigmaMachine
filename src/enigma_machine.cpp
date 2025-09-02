@@ -65,16 +65,22 @@ void Rotor::spin(int direction) {
   }
 }
 
-void Rotor::transfer(char &key) {
-  if (alphabet_.find(key) != alphabet_.end()) {
-    key = shiftIndex(symbols_, position_, alphabet_.at(key));
+void Rotor::transfer(char &key, int direction) {
+  if (alphabet_.find(key) == alphabet_.end()) {
+    return;
   }
-}
 
-template <typename T, size_t N>
-T &Rotor::shiftIndex(std::array<T, N> &symbols, size_t index, size_t shift) {
-  size_t start = (index + shift) % N;
-  return symbols[start];
+  if (direction == 1) {
+    size_t position = (alphabet_.at(key) + position_) % symbols_.size();
+    key = symbols_[position];
+  } else {
+    size_t position =
+        (symbols_.size() +
+         (std::find(symbols_.begin(), symbols_.end(), key) - symbols_.begin()) -
+         position_) %
+        symbols_.size();
+    key = 'A' + position;
+  }
 }
 
 const std::string &Rotor::getModelName() const { return modelName_; }
@@ -110,14 +116,14 @@ Reflector::Reflector(const std::string &modelName, const std::string &symbols)
     : Rotor(modelName, symbols, '\0') {}
 
 void Cable::transfer(char &key) {
-  if (this->input == '\0' || this->output == '\0') {
+  if (this->input_ == '\0' || this->output_ == '\0') {
     return;
   }
 
-  if (this->input == key) {
-    key = this->output;
-  } else if (this->output == key) {
-    key = this->input;
+  if (this->input_ == key) {
+    key = this->output_;
+  } else if (this->output_ == key) {
+    key = this->input_;
   }
 }
 
@@ -135,9 +141,9 @@ void EnigmaMachine::setPlug(const int index, const bool input,
                             const int direction) {
   char *plug;
   if (input) {
-    plug = &activePlugs_[index].input;
+    plug = &activePlugs_[index].input_;
   } else {
-    plug = &activePlugs_[index].output;
+    plug = &activePlugs_[index].output_;
   }
 
   if (direction == 1) {
@@ -156,18 +162,18 @@ void EnigmaMachine::setPlug(const int index, const bool input,
 }
 
 void EnigmaMachine::encrypt(char &key) {
-  for (auto cable : activePlugs_) {
+  for (auto &cable : activePlugs_) {
     cable.transfer(key);
   }
 
-  for (auto rotor : activeRotors_) {
-    rotor.transfer(key);
+  for (auto &rotor : activeRotors_) {
+    rotor.transfer(key, -1);
   }
 
-  currentReflector_.transfer(key);
+  currentReflector_.transfer(key, -1);
 
   for (int i = MAX_ROTORS_; i > 0; --i) {
-    activeRotors_[i - 1].transfer(key);
+    activeRotors_[i - 1].transfer(key, 1);
   }
 
   for (int i = MAX_CABLES_; i > 0; --i) {

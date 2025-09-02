@@ -12,9 +12,7 @@ public:
   Rotor(const std::string &modelName, const std::string &symbols, char notch);
   virtual ~Rotor() = default;
   virtual void spin(int direction = -1);
-  void transfer(char &key);
-  template <typename T, size_t N>
-  T &shiftIndex(std::array<T, N> &activeRotors, size_t index, size_t shift);
+  void transfer(char &key, int direction = 1);
   const std::string &getModelName() const;
   virtual char getNotch(const int offset = 0) const;
   virtual char getActiveSymbol(const int offset = 0) const;
@@ -47,11 +45,11 @@ private:
 
 struct Cable {
   Cable(char input, char output)
-      : input(toupper(input)), output(toupper(output)) {}
+      : input_(toupper(input)), output_(toupper(output)) {}
 
   static constexpr unsigned int MAX_PLUGS = 2;
-  char input = '\0';
-  char output = '\0';
+  char input_ = '\0';
+  char output_ = '\0';
 
   void transfer(char &key);
 };

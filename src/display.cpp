@@ -368,9 +368,9 @@ void plugBoardConfigMenu(WINDOW *windowPlugBoard, EnigmaMachine &enigmaMachine,
       xStep = button.x;
 
       if (i % 2 == 0) {
-        plug = allCables[button.index].output;
+        plug = allCables[button.index].output_;
       } else {
-        plug = allCables[button.index].input;
+        plug = allCables[button.index].input_;
       }
       if (plug == '\0') {
         plug = ' ';
@@ -539,12 +539,12 @@ void drawPlugBoard(WINDOW *windowPlugBoard,
         (windowWidth / 2) - ((activePlugs.size() * PLUG_WIDTH) / 2);
 
     for (size_t j = 0; j < activePlugs.size(); ++j) {
-      if (activePlugs[j].input == '\0' || activePlugs[j].output == '\0') {
+      if (activePlugs[j].input_ == '\0' || activePlugs[j].output_ == '\0') {
         plug = ' ';
       } else if (i % 2 == 0) {
-        plug = activePlugs[j].output;
+        plug = activePlugs[j].output_;
       } else {
-        plug = activePlugs[j].input;
+        plug = activePlugs[j].input_;
       }
       mvwprintw(windowPlugBoard, yStep, xStep, "|");
       xStep++;
